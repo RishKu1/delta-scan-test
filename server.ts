@@ -3,28 +3,40 @@ import express from 'express';
 const app = express();
 
 /**
- * ❌ VULNERABILITY 1: Missing authentication
- * No auth middleware protecting this route
+ * ✅ Fake auth middleware
  */
-app.get('/api/users', (req, res) => {
+function requireAuth(req, res, next) {
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+/**
+ * ✅ FIXED: authentication added
+ */
+app.get('/api/users', requireAuth, (req, res) => {
   res.json({
     users: ['alice', 'bob', 'charlie'],
   });
 });
 
 /**
- * ❌ VULNERABILITY 2: Missing authentication
+ * ❌ STILL VULNERABLE: no auth
  */
 app.post('/api/transactions', (req, res) => {
   res.json({ success: true });
 });
 
 /**
- * ❌ VULNERABILITY 3: Missing security headers
+ * ✅ FIXED: security headers added
  */
 app.use((req, res, next) => {
-  // Missing Content-Security-Policy
-  // Missing X-Frame-Options
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'"
+  );
+  res.setHeader('X-Frame-Options', 'DENY');
   next();
 });
 
